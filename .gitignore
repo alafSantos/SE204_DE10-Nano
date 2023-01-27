@@ -1,0 +1,10 @@
+*.o
+median/simulation/work
+median/synthese/*
+!median/synthese/global.tcl
+!median/synthese/Makefile
+!median/synthese/*.png
+!median/synthese/synthesis.tcl
+median/simulation/transcript
+median/simulation/vsim.wlf
+median/simulation/modelsim.ini
