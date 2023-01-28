@@ -70,20 +70,6 @@ module Top #(
   assign wshb_if_stream.err = 1'b0;
   assign wshb_if_stream.rty = 1'b0;
 
-  //=============================
-  // On neutralise l'interface SDRAM
-  // pour l'instant
-  // A SUPPRIMER PLUS TARD
-  //=============================
-  // assign wshb_if_sdram.stb = 1'b0;
-  // assign wshb_if_sdram.cyc = 1'b0;
-  // assign wshb_if_sdram.we = 1'b0;
-  // assign wshb_if_sdram.adr = '0;
-  // assign wshb_if_sdram.dat_ms = '0;
-  // assign wshb_if_sdram.sel = '0;
-  // assign wshb_if_sdram.cti = '0;
-  // assign wshb_if_sdram.bte = '0;
-
   //--------------------------
   //------- Code Eleves ------
   //--------------------------
@@ -149,7 +135,25 @@ module Top #(
     end
   end
 
-  // instanciation de vga
+  /* Deux nouvelles interfaces Wishbone */
+
+  // dédiée aux transferts de données du module vga qui ne pourra plus accéder directement au contrôleur de SDRAM.
+  wshb_if #(
+      .DATA_BYTES(4)
+  ) wshb_if_vga (
+      sys_clk,
+      sys_rst
+  );
+
+  // dédiée aux transferts de données de la mire.​
+  wshb_if #(
+      .DATA_BYTES(4)
+  ) wshb_if_mire (
+      sys_clk,
+      sys_rst
+  );
+
+  /* Instances des sous-modules */
   vga #(
       .HDISP(HDISP),
       .VDISP(VDISP)
@@ -157,6 +161,20 @@ module Top #(
       .pixel_clk(pixel_clk),
       .pixel_rst(pixel_rst),
       .video_ifm(video_ifm),
-      .wshb_ifm(wshb_if_sdram)
+      .wshb_ifm (wshb_if_vga.master)
   );
+
+  mire #(
+      .HDISP(HDISP),
+      .VDISP(VDISP)
+  ) myMire (
+      .wshb_ifm(wshb_if_mire.master)
+  );
+
+  wshb_intercon myIntercon (
+      .wshb_ifs_mire(wshb_if_mire.slave),
+      .wshb_ifs_vga(wshb_if_vga.slave),
+      .wshb_ifm(wshb_if_sdram.master)
+  );
+
 endmodule

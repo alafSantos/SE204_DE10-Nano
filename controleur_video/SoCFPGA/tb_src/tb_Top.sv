@@ -31,6 +31,7 @@ module tb_Top;
   end
 
   video_if myVideo ();
+  
   Top #(
       .HDISP(160),
       .VDISP(90)
