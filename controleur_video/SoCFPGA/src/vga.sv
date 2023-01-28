@@ -5,7 +5,8 @@ module vga #(
 ) (
     input pixel_clk,  // horloge entrante du module
     input pixel_rst,  // initialisation,  actif à l'état haut
-    video_if.master video_ifm // Tous les signaux destinés à l'écran passeront par cette interface
+    video_if.master video_ifm, // Tous les signaux destinés à l'écran passeront par cette interface
+    wshb_if.master wshb_ifm // Cette interface permettra d'échanger des données de 32 bits avec une fréquence de bus de 100MHz
 );
 
   // Time Parameters 
@@ -48,14 +49,66 @@ module vga #(
     video_ifm.HS <= !(pixelCpt >= HFP && pixelCpt < HFP + HPULSE);
     video_ifm.VS <= !(ligneCpt >= VFP && ligneCpt < VFP + VPULSE);
     video_ifm.BLANK <= BLANK_aux;
-    if (BLANK_aux) begin
-      video_ifm.RGB <= ((pixelCpt - (H_width - HDISP)) % 16) && ((ligneCpt - (V_width - VDISP)) % 16) ? 24'h000000 : 24'hFFFFFF;
-    end
   end
 
-  // Clock Dealer
-  assign video_ifm.CLK = pixel_clk;
+  assign video_ifm.CLK = pixel_clk;  // Clock Dealer
   assign pixelCpt_aux = pixelCpt == H_width - 1;
   assign BLANK_aux = ((pixelCpt >= (H_width - HDISP)) && (ligneCpt >= (V_width - VDISP)));
+
+
+  // Générez sur wshb_ifm des requètes d'écriture permanentes
+  assign wshb_ifm.dat_ms = '0;  // Donnée 32 bits émises
+  assign wshb_ifm.cyc = 1'b1;  // Le bus est sélectionné
+  assign wshb_ifm.sel = 4'b1111;  // Les 4 octets sont à écrire
+  assign wshb_ifm.we = 1'b0;  // Transaction en écriture
+  assign wshb_ifm.cti = '0;  // Transfert classique
+  assign wshb_ifm.bte = '0;  // sans utilité
+
+
+  // Ecriture en FIFO 
+  logic read, rempty, write, wfull, walmost_full, fifoFull;
+  logic [31:0] rdata, wdata;
+
+  async_fifo #(
+      .DATA_WIDTH(32),
+      .DEPTH_WIDTH($clog2(256)),
+      .ALMOST_FULL_THRESHOLD(255)
+  ) myFIFO (
+      .rst(wshb_ifm.rst),
+      .rclk(pixel_clk),
+      .read(read),
+      .rdata(rdata),
+      .rempty(rempty),
+      .wclk(wshb_ifm.clk),
+      .wdata(wdata),
+      .write(write),
+      .wfull(wfull),
+      .walmost_full(walmost_full)
+  );
+  assign write = wshb_ifm.ack;
+  assign wdata = wshb_ifm.dat_sm;
+
+  // Lecture en SDRAM
+  always_ff @(posedge wshb_ifm.clk) begin
+    if (wshb_ifm.rst) begin
+      wshb_ifm.adr <= 0;
+    end else if (wshb_ifm.ack) begin
+      wshb_ifm.adr <= (wshb_ifm.adr == (4 * (VDISP * HDISP - 1))) ? 0 : wshb_ifm.adr + 4;
+    end
+  end
+  assign wshb_ifm.stb = !(wfull);  // Nous demandons une transaction
+
+  // Lecture de la FIFO.
+  always_ff @(posedge pixel_clk) begin
+    if (pixel_rst) begin
+      fifoFull <= 0;
+    end else begin
+      read <= (video_ifm.BLANK && !rempty && fifoFull);
+      fifoFull <= (wfull && !(video_ifm.VS && video_ifm.HS)) ? 1 : fifoFull;
+      if (BLANK_aux) begin
+        video_ifm.RGB <= rdata[23:0];
+      end
+    end
+  end
 endmodule
 
