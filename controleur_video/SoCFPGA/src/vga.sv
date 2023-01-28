@@ -55,24 +55,23 @@ module vga #(
   assign pixelCpt_aux = pixelCpt == H_width - 1;
   assign BLANK_aux = ((pixelCpt >= (H_width - HDISP)) && (ligneCpt >= (V_width - VDISP)));
 
-
   // Générez sur wshb_ifm des requètes d'écriture permanentes
+  logic read, rempty, write, wfull, walmost_full, fifoFull, cyc_syn;
+  assign wshb_ifm.cyc = cyc_syn && !wfull;
+  assign wshb_ifm.stb = wshb_ifm.cyc;  // Le bus est sélectionné
   assign wshb_ifm.dat_ms = '0;  // Donnée 32 bits émises
-  assign wshb_ifm.cyc = wshb_ifm.stb;  // Le bus est sélectionné
   assign wshb_ifm.sel = 4'b1111;  // Les 4 octets sont à écrire
   assign wshb_ifm.we = 1'b0;  // Transaction en écriture
   assign wshb_ifm.cti = '0;  // Transfert classique
   assign wshb_ifm.bte = '0;  // sans utilité
 
-
   // Ecriture en FIFO 
-  logic read, rempty, write, wfull, walmost_full, fifoFull;
   logic [31:0] rdata, wdata;
 
   async_fifo #(
       .DATA_WIDTH(32),
       .DEPTH_WIDTH($clog2(256)),
-      .ALMOST_FULL_THRESHOLD(255)
+      .ALMOST_FULL_THRESHOLD(224)
   ) myFIFO (
       .rst(wshb_ifm.rst),
       .rclk(pixel_clk),
@@ -96,7 +95,6 @@ module vga #(
       wshb_ifm.adr <= (wshb_ifm.adr == (4 * (VDISP * HDISP - 1))) ? 0 : wshb_ifm.adr + 4;
     end
   end
-  assign wshb_ifm.stb = !(wfull);  // Nous demandons une transaction
 
   // Lecture de la FIFO.
   always_ff @(posedge pixel_clk) begin
@@ -108,6 +106,16 @@ module vga #(
       if (BLANK_aux) begin
         video_ifm.RGB <= rdata[23:0];
       end
+    end
+  end
+
+  // Upgrade cyc (stb)
+  always_ff @(posedge wshb_ifm.clk) begin
+    if(wshb_ifm.rst) begin
+      cyc_syn <= 0;
+    end
+    else if (!walmost_full) begin
+      cyc_syn <= 1;
     end
   end
 endmodule
