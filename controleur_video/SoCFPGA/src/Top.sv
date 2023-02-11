@@ -60,16 +60,6 @@ module Top #(
       .KEY     (KEY)
   );
 
-  //=============================
-  // On neutralise l'interface
-  // du flux video pour l'instant
-  // A SUPPRIMER PLUS TARD
-  //=============================
-  assign wshb_if_stream.ack = 1'b1;
-  assign wshb_if_stream.dat_sm = '0;
-  assign wshb_if_stream.err = 1'b0;
-  assign wshb_if_stream.rty = 1'b0;
-
   //--------------------------
   //------- Code Eleves ------
   //--------------------------
@@ -145,14 +135,6 @@ module Top #(
       sys_rst
   );
 
-  // dédiée aux transferts de données de la mire.​
-  wshb_if #(
-      .DATA_BYTES(4)
-  ) wshb_if_mire (
-      sys_clk,
-      sys_rst
-  );
-
   /* Instances des sous-modules */
   vga #(
       .HDISP(HDISP),
@@ -164,15 +146,8 @@ module Top #(
       .wshb_ifm (wshb_if_vga.master)
   );
 
-  mire #(
-      .HDISP(HDISP),
-      .VDISP(VDISP)
-  ) myMire (
-      .wshb_ifm(wshb_if_mire.master)
-  );
-
   wshb_intercon myIntercon (
-      .wshb_ifs_mire(wshb_if_mire.slave),
+      .wshb_ifs_mire(wshb_if_stream),
       .wshb_ifs_vga(wshb_if_vga.slave),
       .wshb_ifm(wshb_if_sdram.master)
   );
