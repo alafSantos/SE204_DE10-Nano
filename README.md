@@ -8,7 +8,7 @@
 ---
 
 ### TD SystemVerilog
-- Le **filtre médian** se trouve dans le dossier **median**
+- Le **filtre médian** se trouve dans le dossier **median**.
 
 ---
 
@@ -24,3 +24,6 @@
         * la documentation de l'interface Wishbone
         * des outils nécessaires à la réalisation du testbench
 ---
+
+### TD Contrôleur Vidéo
+- Le projet se trouve dans le dossier **controleur_video**.
