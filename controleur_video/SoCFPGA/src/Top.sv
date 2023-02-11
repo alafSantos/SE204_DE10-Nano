@@ -1,13 +1,17 @@
 `default_nettype none
 
-module Top (
+module Top #(
+    parameter HDISP = 800,
+    parameter VDISP = 480
+) (
     // Les signaux externes de la partie FPGA
-    input  wire                FPGA_CLK1_50,
-    input  wire          [1:0] KEY,
-    output logic         [7:0] LED,
-    input  wire          [3:0] SW,
+    input  wire                  FPGA_CLK1_50,
+    input  wire            [1:0] KEY,
+    output logic           [7:0] LED,
+    input  wire            [3:0] SW,
     // Les signaux du support matériel son regroupés dans une interface
-           hws_if.master       hws_ifm
+           hws_if.master         hws_ifm,
+           video_if.master       video_ifm
 );
 
   //====================================
@@ -83,7 +87,7 @@ module Top (
   //--------------------------
   //------- Code Eleves ------
   //--------------------------
-  logic [31:0] cpt, cpt2; // size 32 a cause d'un warning
+  logic [31:0] cpt, cpt2;  // size 32 a cause d'un warning
   logic pixel_rst, D0, D1, Q0;
 
   // recopier la valeur  du signal KEY[0]  vers la led LED[0]
@@ -144,4 +148,14 @@ module Top (
       LED[2] <= !(LED[2]);
     end
   end
+
+  // instanciation de vga
+  vga #(
+      .HDISP(HDISP),
+      .VDISP(VDISP)
+  ) myVGA (
+      .pixel_clk(pixel_clk),
+      .pixel_rst(pixel_rst),
+      .video_ifm(video_ifm)
+  );
 endmodule
