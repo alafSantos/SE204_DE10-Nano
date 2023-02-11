@@ -5,6 +5,7 @@ module wshb_intercon (
 );
   logic token;  // 0 -> VGA, 1 -> Mire
 
+  // Arbitre (token)
   always_ff @(posedge wshb_ifm.clk) begin
     if (wshb_ifm.rst) begin
       token <= 1;
@@ -13,8 +14,9 @@ module wshb_intercon (
     end
   end
 
+  // Distributeur de signal 
   always_comb begin
-    if (token) begin
+    if (token) begin // Mire a le jeton
       wshb_ifm.cyc = wshb_ifs_mire.cyc;
       wshb_ifm.stb = wshb_ifs_mire.stb;
       wshb_ifm.adr = wshb_ifs_mire.adr;
@@ -28,7 +30,7 @@ module wshb_intercon (
       wshb_ifs_vga.ack = 0;
       wshb_ifs_mire.dat_sm = wshb_ifm.dat_sm;
       wshb_ifs_vga.dat_sm = 0;
-    end else begin
+    end else begin // VGA a le jeton
       wshb_ifm.cyc = wshb_ifs_vga.cyc;
       wshb_ifm.stb = wshb_ifs_vga.stb;
       wshb_ifm.adr = wshb_ifs_vga.adr;
@@ -43,6 +45,8 @@ module wshb_intercon (
       wshb_ifs_vga.dat_sm = wshb_ifm.dat_sm;
       wshb_ifs_mire.dat_sm = 0;
     end
+
+    // Les signaux que nous n'utilisons pas dans le cadre de SE204
     wshb_ifs_mire.err = 0;
     wshb_ifs_vga.err = 0;
     wshb_ifs_mire.rty = 0;

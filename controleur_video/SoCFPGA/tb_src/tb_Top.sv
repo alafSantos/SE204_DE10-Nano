@@ -11,17 +11,16 @@ module tb_Top;
   // Interface vers le support matériel
   hws_if hws_ifm ();
 
-  // Instance du module Top
-  // Top Top0 (.*);
-
   ///////////////////////////////
   //  Code élèves
   //////////////////////////////
 
+  // Signal d'horloge
   always #10ns FPGA_CLK1_50 = ~FPGA_CLK1_50;
 
-  `define SIMULATION
+  `define SIMULATION 1'b1
 
+  // Démarrage de la simulation
   initial begin
     $display("Starting...");
     KEY[0] = 1;
@@ -32,6 +31,7 @@ module tb_Top;
 
   video_if myVideo ();
   
+  // Instance du module Top
   Top #(
       .HDISP(160),
       .VDISP(90)
@@ -44,6 +44,7 @@ module tb_Top;
       .video_ifm(myVideo)
   );
 
+  // Instance du module screen
   screen #(
       .mode(13),
       .X(160),
