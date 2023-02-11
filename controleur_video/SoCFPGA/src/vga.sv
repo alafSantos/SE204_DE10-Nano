@@ -58,7 +58,7 @@ module vga #(
 
   // Générez sur wshb_ifm des requètes d'écriture permanentes
   assign wshb_ifm.dat_ms = '0;  // Donnée 32 bits émises
-  assign wshb_ifm.cyc = 1'b1;  // Le bus est sélectionné
+  assign wshb_ifm.cyc = wshb_ifm.stb;  // Le bus est sélectionné
   assign wshb_ifm.sel = 4'b1111;  // Les 4 octets sont à écrire
   assign wshb_ifm.we = 1'b0;  // Transaction en écriture
   assign wshb_ifm.cti = '0;  // Transfert classique
